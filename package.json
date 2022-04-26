@@ -1,0 +1,32 @@
+{
+  "name": "projeto12-batepapo-uol-api",
+  "version": "1.0.0",
+  "description": "Remake da api do projeto uol",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "nodemon index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/f7lipe/projeto12-batepapo-uol-api.git"
+  },
+  "keywords": [
+    "backend",
+    "api"
+  ],
+  "author": "Filipe Correia",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/f7lipe/projeto12-batepapo-uol-api/issues"
+  },
+  "homepage": "https://github.com/f7lipe/projeto12-batepapo-uol-api#readme",
+  "dependencies": {
+    "chalk": "^5.0.1",
+    "cors": "^2.8.5",
+    "express": "^4.18.0",
+    "nodemon": "^2.0.15"
+  }
+}
