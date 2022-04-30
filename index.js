@@ -2,7 +2,7 @@ import cors from 'cors'
 import chalk from 'chalk'
 import dayjs from 'dayjs'
 import dotenv from 'dotenv'
-import express, {json} from 'express'
+import express, { json } from 'express'
 import { MongoClient, ServerApiVersion } from 'mongodb'
 import joi from 'joi'
 
@@ -23,48 +23,52 @@ client.connect(err => {
 const participantSchema = joi.object(
     {
         name: joi.string()
-                    .min(1)
-                    .required()
+            .min(1)
+            .required()
     }
 )
 
+const messageSchema = joi.object(
+    {
+        to: joi.string()
+            .min(1)
+            .required(),
+        text: joi.string()
+            .min(1)
+            .required(),
+        type: joi.string().allow("message").allow("private-message")
+    }
+)
 //PARTICIPANTES
-let participants = []
-app.post('/participants', async (req, res) =>{
+app.post('/participants', async (req, res) => {
 
 
-        const username = req.body
-        const { error, value } = participantSchema.validate(username)
+    const username = req.body
+    const { error, value } = participantSchema.validate(username)
 
-        try {
-            const participants = await uolDb.collection("participants")
-            const messages = await uolDb.collection("messages")
-            const search = await participants.findOne(value)
-            
-            if (error === undefined ) {
-              participants.insertOne({name: value.name, lastStatus: Date.now()})
-              messages.insertOne({from: value.name, to: 'Todos', text: 'entra na sala...', type: 'status', time: dayjs().format("HH:mm:ss")})
-                res.sendStatus(201)
-            } else {
-                 res.status(422).send(error.details.map(detail => detail.message))
-            }
+    try {
+        const participants = await uolDb.collection("participants")
+        const messages = await uolDb.collection("messages")
+        const search = await participants.findOne(value)
 
-        } catch (error) {
-            
+        if (error === undefined) {
+            participants.insertOne({ name: value.name, lastStatus: Date.now() })
+            messages.insertOne({ from: value.name, to: 'Todos', text: 'entra na sala...', type: 'status', time: dayjs().format("HH:mm:ss") })
+            res.sendStatus(201)
+        } else {
+            res.status(422).send(error.details.map(detail => detail.message))
         }
 
-
-
-
-
-
+    } catch (error) {
+        res.status(422).send(Error)
+    }
 })
 
-app.get('/participants', async (req, res) =>{
+app.get('/participants', async (req, res) => {
     try {
         const participants = await uolDb.collection("participants")
         const search = await participants.find({}).toArray()
-        
+
         res.status(200).send(search)
 
     } catch (error) {
@@ -72,7 +76,24 @@ app.get('/participants', async (req, res) =>{
     }
 })
 
+//MENSAGENS 
+app.post('/messages', async (req, res) => {
+    const { user } = req.headers
+    const message = req.body
+    const { error, value } = messageSchema.validate(message)
 
+    if (!error) {
+        try {
+            const messages = await uolDb.collection("messages")
+            messages.insertOne({ from: user, to: value.to, text: value.text, type: value.type, time: dayjs().format("HH:mm:ss") })
+            res.sendStatus(201)
+        } catch (error) {
+            res.status(422).send(error)
+        }
+    } else {
+        res.sendStatus(422)
+    }
+})
 
 app.listen(5000, () => {
     console.log(chalk.bold.green('Server running at port 5000'))
