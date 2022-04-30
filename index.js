@@ -60,6 +60,19 @@ app.post('/participants', async (req, res) =>{
 
 })
 
+app.get('/participants', async (req, res) =>{
+    try {
+        const participants = await uolDb.collection("participants")
+        const search = await participants.find({}).toArray()
+        
+        res.status(200).send(search)
+
+    } catch (error) {
+        res.status(422).send(error.details.map(detail => detail.message))
+    }
+})
+
+
 
 app.listen(5000, () => {
     console.log(chalk.bold.green('Server running at port 5000'))
