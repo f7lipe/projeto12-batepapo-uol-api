@@ -5,6 +5,7 @@ import dotenv from 'dotenv'
 import express, { json } from 'express'
 import { MongoClient, ServerApiVersion } from 'mongodb'
 import joi from 'joi'
+import { query } from 'express'
 
 dotenv.config()
 
@@ -92,6 +93,29 @@ app.post('/messages', async (req, res) => {
         }
     } else {
         res.sendStatus(422)
+    }
+})
+
+app.get('/messages', async (req, res)=>{
+    const { user } = req.headers
+    const limit = parseInt(req.query.limit)
+    try {
+        const messages = await uolDb.collection("messages")
+        const allMessages = await messages.find(
+            {   
+         
+                $or: [{type: 'message'}, {type: 'private-message'}, {from: user}, {to: user}]
+            }
+        ).toArray()
+        if (limit){
+         const splicedMessages = [...allMessages].splice(0,limit)
+         
+         res.status(201).send(splicedMessages)
+        }
+        else res.send(allMessages)
+        
+    } catch (error) {
+        res.status(422).send(error)
     }
 })
 
