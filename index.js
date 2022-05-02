@@ -119,6 +119,29 @@ app.get('/messages', async (req, res)=>{
     }
 })
 
+
+//STATUS
+app.post('/status', async (req, res)=>{
+    const { user } = req.headers
+    try {
+        const participants = await uolDb.collection("participants")
+        const {_id, name} = await participants.findOne({name: user})
+        if(name){
+            console.log(_id, name)
+            await participants.updateOne(
+                { 
+                    name: name
+                }, 
+                {$set: {lastStatus: Date.now()}}
+            )
+            res.sendStatus(200)
+        }    
+        
+    } catch (error) {
+        res.status(404).send(error)
+    }
+
+})
 app.listen(5000, () => {
     console.log(chalk.bold.green('Server running at port 5000'))
 })
