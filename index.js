@@ -5,7 +5,6 @@ import dotenv from 'dotenv'
 import express, { json } from 'express'
 import { MongoClient, ServerApiVersion } from 'mongodb'
 import joi from 'joi'
-import { query } from 'express'
 
 dotenv.config()
 
@@ -127,7 +126,6 @@ app.post('/status', async (req, res)=>{
         const participants = await uolDb.collection("participants")
         const {_id, name} = await participants.findOne({name: user})
         if(name){
-            console.log(_id, name)
             await participants.updateOne(
                 { 
                     name: name
@@ -142,6 +140,35 @@ app.post('/status', async (req, res)=>{
     }
 
 })
+
+setInterval(removeParticipants, 15000)
+
+
+async function removeParticipants(){
+  try {
+    const participantsCollection = await uolDb.collection("participants")
+    const participants = await participantsCollection.find().toArray()
+    participants.forEach(async participant =>{
+        const now = Date.now()
+        const lastStatus = participant.lastStatus
+        const absoluteTimeDifference = Math.abs(lastStatus - now)
+        if(absoluteTimeDifference >= 10000){
+            await uolDb.collection('messages').insertOne({
+                from: participant.name,
+                to: 'Todos',
+                text: 'sai da sala...',
+                type: 'status',
+                time:  dayjs().format("HH:mm:ss")
+            })
+
+            await participantsCollection.deleteOne(participant)
+        }
+    })
+  } catch (error) {
+      
+  }
+}
+
 app.listen(5000, () => {
     console.log(chalk.bold.green('Server running at port 5000'))
 })
