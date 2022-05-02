@@ -36,7 +36,7 @@ const messageSchema = joi.object(
         text: joi.string()
             .min(1)
             .required(),
-        type: joi.string().allow("message").allow("private-message")
+            type: joi.string().valid('message', 'private_message').required(),
     }
 )
 //PARTICIPANTES
