@@ -36,9 +36,12 @@ const messageSchema = joi.object(
         text: joi.string()
             .min(1)
             .required(),
-            type: joi.string().valid('message', 'private_message').required(),
+        type: joi.string()
+                 .valid('message', 'private_message')
+                 .required()
     }
 )
+
 //PARTICIPANTES
 app.post('/participants', async (req, res) => {
 
@@ -46,32 +49,42 @@ app.post('/participants', async (req, res) => {
     const username = req.body
     const { error, value } = participantSchema.validate(username)
 
+    if(error) return res.status(422).send(error.details.map(detail => detail.message))
+    
     try {
-        const participants = await uolDb.collection("participants")
-        const messages = await uolDb.collection("messages")
-        const search = await participants.findOne(value)
+        const participantsCollection = await uolDb.collection("participants")
+        const participant = await participantsCollection.findOne(value)
+        const messagesCollection = await uolDb.collection("messages")
 
-        if (error === undefined) {
-            participants.insertOne({ name: value.name, lastStatus: Date.now() })
-            messages.insertOne({ from: value.name, to: 'Todos', text: 'entra na sala...', type: 'status', time: dayjs().format("HH:mm:ss") })
+        if(participant) return res.sendStatus(409)
+
+          await  participantsCollection.insertOne(
+                { 
+                    name: value.name, 
+                    lastStatus: Date.now() 
+                })
+          await  messagesCollection.insertOne(
+                { 
+                    from: value.name, to: 'Todos', 
+                    text: 'entra na sala...', 
+                    type: 'status', 
+                    time: dayjs().format("HH:mm:ss") 
+                })
             res.sendStatus(201)
-        } else {
-            res.status(422).send(error.details.map(detail => detail.message))
-        }
-
     } catch (error) {
-        res.status(422).send(Error)
+        console.log(chalk.red(error))
     }
 })
 
 app.get('/participants', async (req, res) => {
     try {
-        const participants = await uolDb.collection("participants")
-        const search = await participants.find({}).toArray()
+        const participantsCollection = await uolDb.collection("participants")
+        const participants = await participantsCollection.find({}).toArray()
 
-        res.status(200).send(search)
+        res.status(200).send(participants)
 
     } catch (error) {
+        console.log(chalk.red(error))
         res.status(422).send(error.details.map(detail => detail.message))
     }
 })
@@ -84,15 +97,24 @@ app.post('/messages', async (req, res) => {
 
     if (!error) {
         try {
-            const messages = await uolDb.collection("messages")
-            messages.insertOne({ from: user, to: value.to, text: value.text, type: value.type, time: dayjs().format("HH:mm:ss") })
+            const participantsCollection = await uolDb.collection("participants")
+            const participant = await participantsCollection.findOne({name:user})
+            if (!participant) return res.sendStatus(422)
+            const messagesCollection = await uolDb.collection("messages")
+            messagesCollection.insertOne(
+                { 
+                    from: user, 
+                    to: value.to, 
+                    text: value.text, 
+                    type: value.type, 
+                    time: dayjs().format("HH:mm:ss") 
+                })
             res.sendStatus(201)
         } catch (error) {
-            res.status(422).send(error)
+            console.log(chalk.red(error))
         }
-    } else {
-        res.sendStatus(422)
-    }
+    } else  res.sendStatus(422)
+    
 })
 
 app.get('/messages', async (req, res)=>{
@@ -106,15 +128,15 @@ app.get('/messages', async (req, res)=>{
                 $or: [{type: 'message'}, {type: 'private-message'}, {from: user}, {to: user}]
             }
         ).toArray()
-        if (limit){
-         const splicedMessages = [...allMessages].splice(0,limit)
+        if (limit !== NaN && limit){
+         const splicedMessages = [...allMessages].slice(-limit)
          
          res.status(201).send(splicedMessages)
         }
         else res.send(allMessages)
         
     } catch (error) {
-        res.status(422).send(error)
+        console.log(chalk.red(error))
     }
 })
 
